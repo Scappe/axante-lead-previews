@@ -1,0 +1,26 @@
+name: Dispatch ready batch to n8n
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'batches/ready/*.json'
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify n8n once
+        env:
+          N8N_BATCH_WEBHOOK: ${{ secrets.N8N_BATCH_WEBHOOK }}
+        run: |
+          test -n "$N8N_BATCH_WEBHOOK"
+          curl --fail --silent --show-error \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --data '{"repository":"${{ github.repository }}","commit":"${{ github.sha }}","event":"batch_ready"}' \
+            "$N8N_BATCH_WEBHOOK"
+
+# Domani, dopo avere salvato il secret N8N_BATCH_WEBHOOK,
+# spostare questo file in .github/workflows/dispatch-ready-batch.yml.
