@@ -68,7 +68,7 @@ function list(items) {
 
 function renderLead(lead) {
   const subject = encodeURIComponent(`Concept digitale per ${lead.companyName}`);
-  const mailto = `mailto:${encodeURIComponent(lead.cta.email)}?subject=${subject}`;
+  const mailto = `mailto:${lead.cta.email}?subject=${subject}`;
   const imageClass = lead.heroImage ? 'visual-main with-image' : 'visual-main';
   const image = lead.heroImage ? `<img src="${escapeHtml(lead.heroImage)}" alt="Direzione visiva proposta per ${escapeHtml(lead.companyName)}">` : '';
   const services = lead.services.map((service, index) => `<article class="service-card reveal"><span class="service-number">${String(index + 1).padStart(2, '0')}</span><h3>${escapeHtml(service.title)}</h3><p>${escapeHtml(service.description)}</p></article>`).join('');
