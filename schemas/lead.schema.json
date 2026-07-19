@@ -53,6 +53,8 @@
       },
       "additionalProperties": false
     },
+    "proposalTitle": { "type": "string", "minLength": 8 },
+    "proposalDescription": { "type": "string", "minLength": 30 },
     "problems": {
       "type": "array",
       "minItems": 3,
