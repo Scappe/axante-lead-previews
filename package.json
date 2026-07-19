@@ -1,0 +1,13 @@
+{
+  "name": "axante-lead-previews",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs && node scripts/validate.mjs",
+    "validate": "node scripts/validate.mjs"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
