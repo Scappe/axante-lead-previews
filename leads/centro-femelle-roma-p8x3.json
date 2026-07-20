@@ -62,12 +62,13 @@
   "visualDirection": "Atmosfera spa luminosa con verde acqua, panna e dettagli naturali; forme morbide e tono rassicurante.",
   "mainServices": ["Trattamenti viso","Trattamenti corpo","Massaggi manuali","Estetica di base","Bendaggi e fanghi","Tecnologie corpo"],
   "sourceUrls": ["https://www.centroesteticofemelle.it/","https://www.centroesteticofemelle.it/trattamenti-viso-e-corpo","https://www.centroesteticofemelle.it/contatti"],
-  "previewStatus": "BUILDING",
-  "qaStatus": "PENDING",
+  "previewStatus": "NOT_READY",
+  "qaStatus": "QA_FAILED",
   "approvedForContact": false,
   "sendStatus": "DRAFT",
   "lifecycleStatus": "ACTIVE",
   "leadScore": 90,
+  "notes": "BLOCCO VERCEL: limite giornaliero di 100 deployment esaurito. URL verificato il 20/07/2026: HTTP 404. Codice e asset completi su main; deploy da ripetere dopo il reset del 21/07/2026 alle 03:55 Europe/Rome.",
   "emailSubject": "Una proposta per semplificare la scelta dei trattamenti Femelle",
   "emailBody": "Buongiorno,\nsono Daniele di Axante, agenzia web di Roma.\nVisitando il sito del Centro Femelle ho notato l’incoerenza tra la dicitura “Casal Felce” e l’indirizzo in Via di Casal Selce. Ho inoltre trovato pagine molto lunghe, con promozioni e descrizioni tecniche mescolate, e un percorso di contatto poco immediato da smartphone.\nPer mostrarvi una possibile soluzione, abbiamo preparato una nuova versione del vostro sito:\nhttps://axante-lead-previews.vercel.app/p/centro-femelle-roma-p8x3/\nAbbiamo riorganizzato i trattamenti per esigenza e reso telefono, email e informazioni pratiche più facili da trovare.\nSe la direzione vi interessa, possiamo sentirci brevemente.\nUn saluto,\nDaniele – Axante"
 }
