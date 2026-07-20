@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1050" viewBox="0 0 1400 1050" role="img" aria-labelledby="title desc">
+<title id="title">Direzione visiva per Centro Estetico Regina</title>
+<desc id="desc">Composizione botanica e olistica con lettino, foglie e percorsi di benessere.</desc>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1b211a"/><stop offset="1" stop-color="#6f4938"/></linearGradient><radialGradient id="glow"><stop stop-color="#d9e5cf" stop-opacity=".9"/><stop offset="1" stop-color="#d9e5cf" stop-opacity="0"/></radialGradient></defs>
+<rect width="1400" height="1050" fill="url(#bg)"/><circle cx="1080" cy="180" r="300" fill="url(#glow)" opacity=".45"/>
+<path d="M180 880C330 650 360 330 580 130C500 420 570 690 180 880Z" fill="#a9c59d" opacity=".8"/>
+<path d="M1240 900C1040 720 1040 420 810 210C930 490 820 780 1240 900Z" fill="#d6b49d" opacity=".55"/>
+<g transform="translate(365 300)"><rect x="0" y="245" width="700" height="180" rx="90" fill="#f1e8dc"/><rect x="90" y="405" width="34" height="170" rx="17" fill="#d2b9a6"/><rect x="575" y="405" width="34" height="170" rx="17" fill="#d2b9a6"/><path d="M70 250C160 130 300 100 480 190C540 220 600 240 700 245" fill="none" stroke="#efe2d3" stroke-width="95" stroke-linecap="round"/></g>
+<g fill="none" stroke="#f5eee7" stroke-width="4" opacity=".75"><circle cx="345" cy="230" r="80"/><circle cx="345" cy="230" r="120"/><path d="M345 110V40M225 230H155M465 230H535"/></g>
+<g font-family="Arial, sans-serif" fill="#fff"><text x="95" y="120" font-size="28" letter-spacing="8">RITUALI • NATUROPATIA • CURA</text><text x="95" y="955" font-size="48" font-weight="700">Percorsi costruiti intorno alla persona</text><text x="98" y="1005" font-size="24" fill="#d9e5cf">Viso · Corpo · Benessere olistico</text></g>
+</svg>
