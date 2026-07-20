@@ -1,0 +1,64 @@
+{
+  "slug": "sun-body-conca-doro-p8v2",
+  "companyName": "Sun Body",
+  "sector": "Estetica avanzata e beauty",
+  "city": "Roma · Conca d'Oro",
+  "website": "https://www.sunbodyroma.it/",
+  "template": "professional",
+  "heroImage": "/leads/sun-body-conca-doro-p8v2/hero.svg",
+  "theme": {
+    "accent": "#F6B44B",
+    "accentSecondary": "#45D2C6",
+    "background": "#071416"
+  },
+  "hero": {
+    "eyebrow": "Tecnologie · Team · Roma Nord",
+    "title": "Dalla tecnologia alla scelta giusta per ogni persona.",
+    "description": "Una preview energica e contemporanea che rende leggibili FaceLab, Rewind Plus, laser e trattamenti beauty, mettendo il team e la consulenza prima del catalogo."
+  },
+  "proposalTitle": "Un beauty hub chiaro, dinamico e organizzato per obiettivi.",
+  "proposalDescription": "La nuova struttura riduce ripetizioni e contenuti dispersivi: la persona sceglie tra pelle, rimodellamento, epilazione, relax e mani, scopre il percorso consigliato e arriva rapidamente alla consulenza.",
+  "problems": [
+    "Home, menu, contatti e orari sono ripetuti più volte nella stessa pagina.",
+    "Restano visibili testi non rifiniti come «Read More», «Learn More» e «Created with GIMP».",
+    "Le numerose tecnologie sono presentate come elenco, senza una scelta guidata per esigenza.",
+    "Team, analisi FaceLab e ambiente rinnovato restano in secondo piano."
+  ],
+  "opportunities": [
+    "Riorganizzare l'offerta per pelle, rimodellamento, epilazione, relax e mani.",
+    "Trasformare FaceLab e Rewind Plus in percorsi spiegati per fasi e obiettivi.",
+    "Presentare il team e l'analisi iniziale come principali elementi di fiducia.",
+    "Ridurre CTA e duplicazioni per accorciare il percorso mobile verso la consulenza."
+  ],
+  "services": [
+    {
+      "title": "Skin intelligence",
+      "description": "FaceLab, mesopeeling e protocolli viso raccontati a partire dall'analisi della pelle e dagli obiettivi reali."
+    },
+    {
+      "title": "Body technology",
+      "description": "Rewind Plus, pressoterapia, Vacugym ed ENF raccolti in percorsi semplici per rimodellare e ritrovare benessere."
+    },
+    {
+      "title": "Beauty essentials",
+      "description": "Laser, nails, make-up e massaggi presentati in un'area immediata, con listino e prenotazione senza dispersioni."
+    }
+  ],
+  "cta": {
+    "title": "Più chiarezza, senza perdere la ricchezza dell'offerta.",
+    "description": "Il concept mostra come valorizzare tecnologie e persone in un'esperienza più rapida, riconoscibile e orientata alla consulenza.",
+    "email": "hello@axante.it"
+  },
+  "verifiedFacts": [
+    "Via Val Maggia 164, Roma",
+    "Oltre 10 anni di attività dichiarati",
+    "FaceLab, Rewind Plus, ENF e laser 808",
+    "Team presentato sul sito"
+  ],
+  "sourceUrls": [
+    "https://www.sunbodyroma.it/",
+    "https://www.sunbodyroma.it/trattamenti/",
+    "https://www.sunbodyroma.it/listino/",
+    "https://www.sunbodyroma.it/elenco-trattamenti-facelab/"
+  ]
+}
