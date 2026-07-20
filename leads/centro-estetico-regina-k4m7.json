@@ -1,0 +1,62 @@
+{
+  "slug": "centro-estetico-regina-k4m7",
+  "companyName": "Centro Estetico Regina",
+  "sector": "Estetica e benessere olistico",
+  "city": "Roma · Montesacro",
+  "website": "https://www.centroesteticoregina.com/",
+  "template": "local-service",
+  "heroImage": "/leads/centro-estetico-regina-k4m7/hero.svg",
+  "theme": {
+    "accent": "#8A5A44",
+    "accentSecondary": "#A9C59D",
+    "background": "#10120F"
+  },
+  "hero": {
+    "eyebrow": "Estetica · Naturopatia · Roma",
+    "title": "La bellezza come percorso, non come semplice trattamento.",
+    "description": "Una direzione digitale più calma e guidata, pensata per un centro che unisce estetica, cura del corpo e naturopatia. Ogni esigenza diventa un percorso facile da capire e da prenotare."
+  },
+  "proposalTitle": "Un'esperienza digitale che parte dall'ascolto e conduce al percorso giusto.",
+  "proposalDescription": "La proposta valorizza l'anima olistica del centro: consulenza iniziale, percorsi viso e corpo, naturopatia e pacchetti vengono presentati con una gerarchia semplice, calda e rassicurante, evitando un listino difficile da esplorare.",
+  "problems": [
+    "Nella home compare il testo tecnico non elaborato «[mc4wp_form id=\"227\"]».",
+    "Sono visibili errori come «Scorpi», «Oragi di apertura» e «10:00 to 19:00».",
+    "Il listino molto lungo rende difficile confrontare servizi e pacchetti da smartphone.",
+    "La naturopatia non viene ancora usata come filo conduttore distintivo dell'esperienza."
+  ],
+  "opportunities": [
+    "Creare percorsi guidati per pelle, corpo, relax e benessere olistico.",
+    "Rendere pacchetti e consulenza più facili da capire senza scorrere un lungo listino.",
+    "Portare naturopatia e personalizzazione al centro del posizionamento.",
+    "Rendere prenotazione, WhatsApp, orari e indicazioni sempre immediati su mobile."
+  ],
+  "services": [
+    {
+      "title": "Rituali viso su misura",
+      "description": "Dalla pulizia specifica alla radiofrequenza: percorsi leggibili per tipo di pelle, obiettivo e frequenza."
+    },
+    {
+      "title": "Corpo e manualità",
+      "description": "Massaggi, linfodrenaggio, bendaggi e tecnologie organizzati come percorsi, non come semplice elenco."
+    },
+    {
+      "title": "Naturopatia integrata",
+      "description": "Uno spazio dedicato all'approccio olistico, con consulenza e collegamenti chiari ai trattamenti più coerenti."
+    }
+  ],
+  "cta": {
+    "title": "Una proposta da esplorare con calma.",
+    "description": "Questa anteprima mostra una possibile evoluzione. Possiamo valutarla insieme, senza impegno e partendo dalle priorità reali del centro.",
+    "email": "hello@axante.it"
+  },
+  "verifiedFacts": [
+    "Via Valsolda 115, Roma",
+    "Trattamenti viso, corpo ed epilazione",
+    "Naturopatia e dermopigmentazione",
+    "Pacchetti da 10 trattamenti"
+  ],
+  "sourceUrls": [
+    "https://www.centroesteticoregina.com/",
+    "https://www.centroesteticoregina.com/listino-prezzi/"
+  ]
+}
