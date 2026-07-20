@@ -62,12 +62,13 @@
   "visualDirection": "Editoriale luminoso con rosa polvere, borgogna e dettagli oro; griglia sofisticata e tono autorevole.",
   "mainServices": ["Trattamenti viso","Trattamenti corpo","Massaggi","Epilazione","Make-up","Dermocosmesi naturale"],
   "sourceUrls": ["https://www.esteticabeautyclub.it/","https://www.esteticabeautyclub.it/trattamenti-viso","https://www.esteticabeautyclub.it/massaggi","https://www.esteticabeautyclub.it/contatti"],
-  "previewStatus": "BUILDING",
-  "qaStatus": "PENDING",
+  "previewStatus": "NOT_READY",
+  "qaStatus": "QA_FAILED",
   "approvedForContact": false,
   "sendStatus": "DRAFT",
   "lifecycleStatus": "ACTIVE",
   "leadScore": 92,
+  "notes": "BLOCCO VERCEL: limite giornaliero di 100 deployment esaurito. URL verificato il 20/07/2026: HTTP 404. Codice e asset completi su main; deploy da ripetere dopo il reset del 21/07/2026 alle 03:55 Europe/Rome.",
   "emailSubject": "Ho trovato numeri di telefono diversi sul vostro sito",
   "emailBody": "Buongiorno,\nsono Daniele di Axante, agenzia web di Roma.\nVisitando il sito di Beauty Club ho trovato un numero di telefono in apertura diverso da quello indicato nella sezione contatti. Ho inoltre notato pagine molto lunghe e ripetitive e un percorso poco immediato per scegliere tra viso, corpo, massaggi ed epilazione, soprattutto da smartphone.\nPer mostrarvi una possibile soluzione, abbiamo preparato una nuova versione del vostro sito:\nhttps://axante-lead-previews.vercel.app/p/beauty-club-roma-r4v9/\nAbbiamo uniformato i contatti e riorganizzato l’offerta per renderla più chiara, professionale e semplice da usare.\nSe la direzione vi interessa, possiamo sentirci brevemente.\nUn saluto,\nDaniele – Axante"
 }
