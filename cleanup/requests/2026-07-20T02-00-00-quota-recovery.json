@@ -1,0 +1,7 @@
+{
+  "action": "delete_old_vercel_deployments",
+  "approved": true,
+  "keep_current_production": true,
+  "reason": "Recupero quota dopo deploy automatici intermedi e falliti",
+  "deleted_slugs": []
+}
