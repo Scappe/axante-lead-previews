@@ -5,109 +5,119 @@ const root = process.cwd();
 const leadsDir = path.join(root, 'leads');
 const publicDir = path.join(root, 'public');
 const distDir = path.join(root, 'dist');
-const allowedTemplates = new Set(['professional', 'local-service', 'premium-retail']);
+const layouts = new Set(['botanical', 'editorial', 'spa']);
 
-const escapeHtml = value => String(value ?? '')
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#039;');
+const esc = value => String(value ?? '')
+  .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+const attr = esc;
+const cleanPhone = value => String(value || '').replace(/[^\d+]/g, '');
+const telHref = value => `tel:${cleanPhone(value)}`;
 
 function requiredString(value, field, min = 2) {
-  if (typeof value !== 'string' || value.trim().length < min) {
-    throw new Error(`${field} must contain at least ${min} characters.`);
-  }
+  if (typeof value !== 'string' || value.trim().length < min) throw new Error(`${field} must contain at least ${min} characters.`);
 }
-
 function requiredList(value, field, minItems = 3) {
-  if (!Array.isArray(value) || value.length < minItems || value.some(item => typeof item !== 'string' || item.trim().length < 12)) {
-    throw new Error(`${field} must contain at least ${minItems} specific items.`);
+  if (!Array.isArray(value) || value.length < minItems || value.some(item => typeof item !== 'string' || item.trim().length < 8)) {
+    throw new Error(`${field} must contain at least ${minItems} meaningful items.`);
   }
 }
-
+function assetExists(asset, slug, field) {
+  requiredString(asset, field, 8);
+  if (!asset.startsWith(`/leads/${slug}/`)) throw new Error(`${field} must live under /leads/${slug}/.`);
+  if (!fs.existsSync(path.join(publicDir, asset.replace(/^\//, '')))) throw new Error(`Missing asset ${asset}.`);
+}
 function validateLead(lead, filename) {
-  const prefix = `${filename}:`;
-  requiredString(lead.slug, `${prefix} slug`, 7);
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*-[a-z0-9]{4}$/.test(lead.slug)) {
-    throw new Error(`${prefix} slug must end with a four-character random suffix.`);
-  }
-  requiredString(lead.companyName, `${prefix} companyName`);
-  requiredString(lead.sector, `${prefix} sector`);
-  requiredString(lead.city, `${prefix} city`);
-  requiredString(lead.website, `${prefix} website`, 8);
-  try { new URL(lead.website); } catch { throw new Error(`${prefix} website must be a valid absolute URL.`); }
-  if (!allowedTemplates.has(lead.template)) throw new Error(`${prefix} unsupported template ${lead.template}.`);
-  for (const key of ['accent', 'accentSecondary', 'background']) {
-    if (!/^#[0-9a-fA-F]{6}$/.test(lead.theme?.[key] || '')) throw new Error(`${prefix} invalid theme.${key}.`);
-  }
-  requiredString(lead.hero?.eyebrow, `${prefix} hero.eyebrow`, 3);
-  requiredString(lead.hero?.title, `${prefix} hero.title`, 8);
-  requiredString(lead.hero?.description, `${prefix} hero.description`, 30);
-  requiredList(lead.problems, `${prefix} problems`);
-  requiredList(lead.opportunities, `${prefix} opportunities`);
-  if (!Array.isArray(lead.services) || lead.services.length < 3) throw new Error(`${prefix} services requires at least three items.`);
-  lead.services.forEach((service, index) => {
-    requiredString(service?.title, `${prefix} services[${index}].title`, 3);
-    requiredString(service?.description, `${prefix} services[${index}].description`, 20);
-  });
-  requiredString(lead.cta?.title, `${prefix} cta.title`, 5);
-  requiredString(lead.cta?.description, `${prefix} cta.description`, 20);
-  requiredString(lead.cta?.email, `${prefix} cta.email`, 5);
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.cta.email)) throw new Error(`${prefix} invalid cta.email.`);
-  if (lead.heroImage) {
-    if (!lead.heroImage.startsWith(`/leads/${lead.slug}/`)) throw new Error(`${prefix} heroImage must live under /leads/${lead.slug}/.`);
-    const assetPath = path.join(publicDir, lead.heroImage.replace(/^\//, ''));
-    if (!fs.existsSync(assetPath)) throw new Error(`${prefix} missing hero image ${lead.heroImage}.`);
-  }
+  const p = `${filename}:`;
+  requiredString(lead.slug, `${p} slug`, 7);
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*-[a-z0-9]{4}$/.test(lead.slug)) throw new Error(`${p} slug must end with a random four-character suffix.`);
+  ['companyName','sector','city','website','professionalEmail','phone','address','heroTitle','heroDescription','aboutTitle','aboutText','featuredTitle','featuredText','positioning','visualDirection'].forEach(key => requiredString(lead[key], `${p} ${key}`, key.includes('Text') || key.includes('Description') ? 30 : 3));
+  try { new URL(lead.website); } catch { throw new Error(`${p} website must be absolute.`); }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.professionalEmail)) throw new Error(`${p} professionalEmail is invalid.`);
+  if (!layouts.has(lead.layout)) throw new Error(`${p} unsupported layout.`);
+  for (const key of ['accent','accent2','background','surface','text']) if (!/^#[0-9a-f]{6}$/i.test(lead.theme?.[key] || '')) throw new Error(`${p} invalid theme.${key}.`);
+  requiredList(lead.heroFacts, `${p} heroFacts`, 3);
+  requiredList(lead.features, `${p} features`, 3);
+  requiredList(lead.problems, `${p} problems`, 3);
+  requiredList(lead.opportunities, `${p} opportunities`, 3);
+  requiredList(lead.verifiedFacts, `${p} verifiedFacts`, 3);
+  if (!Array.isArray(lead.services) || lead.services.length < 4) throw new Error(`${p} requires at least four services.`);
+  lead.services.forEach((service, i) => { requiredString(service.title, `${p} service ${i} title`, 3); requiredString(service.description, `${p} service ${i} description`, 20); });
+  if (!Array.isArray(lead.method) || lead.method.length < 3) throw new Error(`${p} requires at least three method steps.`);
+  lead.method.forEach((step, i) => { requiredString(step.title, `${p} method ${i} title`, 3); requiredString(step.description, `${p} method ${i} description`, 20); });
+  if (!Array.isArray(lead.faqs) || lead.faqs.length < 3) throw new Error(`${p} requires at least three FAQs.`);
+  lead.faqs.forEach((faq, i) => { requiredString(faq.question, `${p} faq ${i} question`, 8); requiredString(faq.answer, `${p} faq ${i} answer`, 20); });
+  assetExists(lead.heroImage, lead.slug, `${p} heroImage`);
+  assetExists(lead.detailImage, lead.slug, `${p} detailImage`);
+  if (lead.approvedForContact !== false || lead.sendStatus !== 'DRAFT') throw new Error(`${p} test contact flags are invalid.`);
 }
 
-function list(items) {
-  return `<ul class="list">${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
-}
+const renderServices = lead => lead.services.map((service, index) => `
+  <article class="service-card reveal">
+    <span class="service-index">${String(index + 1).padStart(2,'0')}</span>
+    <h3>${esc(service.title)}</h3>
+    <p>${esc(service.description)}</p>
+  </article>`).join('');
+const renderMethod = lead => lead.method.map((step, index) => `
+  <article class="method-step reveal"><span>${index + 1}</span><div><h3>${esc(step.title)}</h3><p>${esc(step.description)}</p></div></article>`).join('');
+const renderFaqs = lead => lead.faqs.map((faq, index) => `
+  <details class="faq reveal" ${index === 0 ? 'open' : ''}><summary>${esc(faq.question)}<span>+</span></summary><p>${esc(faq.answer)}</p></details>`).join('');
 
 function renderLead(lead) {
-  const subject = encodeURIComponent(`Concept digitale per ${lead.companyName}`);
-  const mailto = `mailto:${lead.cta.email}?subject=${subject}`;
-  const imageClass = lead.heroImage ? 'visual-main with-image' : 'visual-main';
-  const image = lead.heroImage ? `<img src="${escapeHtml(lead.heroImage)}" alt="Direzione visiva proposta per ${escapeHtml(lead.companyName)}">` : '';
-  const services = lead.services.map((service, index) => `<article class="service-card reveal"><span class="service-number">${String(index + 1).padStart(2, '0')}</span><h3>${escapeHtml(service.title)}</h3><p>${escapeHtml(service.description)}</p></article>`).join('');
-
+  const phone = telHref(lead.phone);
+  const email = `mailto:${lead.professionalEmail}`;
+  const primaryHref = lead.bookingUrl || phone;
+  const primaryLabel = lead.bookingUrl ? 'Prenota su WhatsApp' : 'Prenota un appuntamento';
+  const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.address)}`;
+  const facts = lead.heroFacts.map(item => `<span>${esc(item)}</span>`).join('');
+  const features = lead.features.map(item => `<li>${esc(item)}</li>`).join('');
+  const mobileSecondary = lead.bookingUrl ? phone : email;
+  const mobileSecondaryLabel = lead.bookingUrl ? 'Chiama' : 'Scrivi';
+  const schema = {
+    '@context': 'https://schema.org', '@type': 'BeautySalon', name: lead.companyName,
+    url: lead.website, telephone: lead.phone, email: lead.professionalEmail,
+    address: {'@type':'PostalAddress','streetAddress': lead.address.replace(/,?\s*001\d{2}.*$/i,''),'addressLocality':'Roma','addressRegion':'RM','addressCountry':'IT'}
+  };
   return `<!doctype html>
-<html lang="it">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>${escapeHtml(lead.companyName)} — Concept digitale Axante</title>
-<meta name="description" content="Una proposta digitale personalizzata realizzata da Axante per ${escapeHtml(lead.companyName)}.">
-<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
-<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
-<meta name="theme-color" content="${escapeHtml(lead.theme.accent)}">
-<link rel="stylesheet" href="/base.css?v=1">
-<link rel="stylesheet" href="/components.css?v=1">
-<style>:root{--accent:${escapeHtml(lead.theme.accent)};--accent2:${escapeHtml(lead.theme.accentSecondary)};--bg:${escapeHtml(lead.theme.background)}}</style>
-</head>
-<body data-template="${escapeHtml(lead.template)}">
-<div class="concept-bar">Concept realizzato da Axante · anteprima riservata e non indicizzata</div>
-<header class="site-header"><div class="container nav"><a class="brand" href="/p/${escapeHtml(lead.slug)}/">${escapeHtml(lead.companyName)}<span>.</span></a><nav class="nav-links" aria-label="Navigazione"><a href="#analisi">Analisi</a><a href="#direzione">Direzione</a><a href="#intervento">Intervento</a></nav><a class="nav-cta" href="${mailto}">Parliamone ↗</a></div></header>
-<main>
-<section class="hero"><div class="container hero-grid"><div><span class="eyebrow">${escapeHtml(lead.hero.eyebrow)}</span><h1>${escapeHtml(lead.hero.title)}</h1><p class="hero-copy">${escapeHtml(lead.hero.description)}</p><div class="hero-actions"><a class="button button-primary" href="#direzione">Scopri la proposta ↓</a><a class="button button-secondary" href="${mailto}">Confrontiamoci ↗</a></div><div class="hero-proof"><span>Concept su misura</span><span>Mobile-first</span><span>Orientato alla conversione</span></div></div><div class="hero-visual" aria-label="Direzione visiva proposta"><div class="visual-card ${imageClass}">${image}<div class="visual-copy"><span class="visual-kicker">Nuova direzione digitale</span><strong>${escapeHtml(lead.companyName)}, più chiara e più memorabile.</strong><p>Una possibile evoluzione costruita intorno al pubblico, all'offerta e agli obiettivi dell'attività.</p></div></div><div class="visual-card visual-mini"><small>Priorità individuata</small><b>Trasformare attenzione in richieste</b></div><div class="visual-pill">Concept by Axante</div></div></div></section>
-<section class="section" id="analisi"><div class="container"><div class="section-head reveal"><div><span class="eyebrow">Audit sintetico</span><h2>Da presenza online a strumento commerciale.</h2></div><p>Questa anteprima nasce da elementi osservati sulla presenza digitale attuale. Non è un sito ufficiale né un template generico con un nome diverso.</p></div><div class="audit-grid"><article class="audit-card reveal"><span class="eyebrow">Attriti osservati</span><h3>Cosa può frenare il risultato</h3>${list(lead.problems)}</article><article class="audit-card opportunity reveal"><span class="eyebrow">Spazio di crescita</span><h3>Cosa possiamo rendere più forte</h3>${list(lead.opportunities)}</article></div></div></section>
-<section class="section" id="direzione"><div class="container"><article class="concept reveal"><span class="eyebrow">Direzione proposta</span><h2>${escapeHtml(lead.proposalTitle || `Un sito che rende ${lead.companyName} una scelta più semplice.`)}</h2><p>${escapeHtml(lead.proposalDescription || 'La nuova esperienza combina messaggi più diretti, un’identità visiva contemporanea e una struttura progettata per accompagnare ogni pubblico verso l’informazione e l’azione più rilevante.')}</p></article></div></section>
-<section class="section" id="intervento"><div class="container"><div class="section-head reveal"><div><span class="eyebrow">Intervento Axante</span><h2>Una proposta concreta, non un esercizio grafico.</h2></div><p>Il progetto definitivo viene costruito sui contenuti reali, sugli obiettivi commerciali e sui dati dell'attività.</p></div><div class="service-grid">${services}</div></div></section>
-<section class="cta"><div class="container"><div class="cta-box reveal"><div><h2>${escapeHtml(lead.cta.title)}</h2><p>${escapeHtml(lead.cta.description)}</p></div><a class="button" href="${mailto}">Parla con Axante ↗</a></div></div></section>
+<html lang="it"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>${esc(lead.companyName)} | Centro estetico a Roma</title>
+<meta name="description" content="${attr(lead.metaDescription)}">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+<meta name="theme-color" content="${attr(lead.theme.background)}">
+<link rel="stylesheet" href="/base.css?v=2"><link rel="stylesheet" href="/components.css?v=2">
+<style>:root{--accent:${attr(lead.theme.accent)};--accent2:${attr(lead.theme.accent2)};--bg:${attr(lead.theme.background)};--surface:${attr(lead.theme.surface)};--text:${attr(lead.theme.text)}}</style>
+<script type="application/ld+json">${JSON.stringify(schema).replaceAll('<','\\u003c')}</script>
+</head><body data-layout="${attr(lead.layout)}">
+<header class="site-header"><div class="shell nav-wrap">
+<a class="brand" href="#top" aria-label="${attr(lead.companyName)} home"><span>${esc(lead.companyName)}</span><small>${esc(lead.brandTagline)}</small></a>
+<button class="menu-toggle" aria-expanded="false" aria-controls="site-nav"><span></span><span></span></button>
+<nav id="site-nav" class="site-nav" aria-label="Navigazione principale"><a href="#trattamenti">Trattamenti</a><a href="#approccio">Il nostro approccio</a><a href="#faq">FAQ</a><a href="#contatti">Contatti</a></nav>
+<a class="header-cta" href="${attr(primaryHref)}">${esc(primaryLabel)}</a>
+</div></header>
+<main id="top">
+<section class="hero"><div class="shell hero-grid">
+<div class="hero-copy reveal"><span class="eyebrow">${esc(lead.heroEyebrow)}</span><h1>${esc(lead.heroTitle)}</h1><p>${esc(lead.heroDescription)}</p>
+<div class="hero-actions"><a class="button primary" href="${attr(primaryHref)}">${esc(primaryLabel)}</a><a class="button ghost" href="#trattamenti">Scopri i trattamenti</a></div>
+<div class="hero-facts">${facts}</div></div>
+<div class="hero-media reveal"><div class="image-frame"><img src="${attr(lead.heroImage)}" alt="Illustrazione dedicata al benessere e alla cura estetica di ${attr(lead.companyName)}"></div><span class="media-note">${esc(lead.mediaNote)}</span></div>
+</div></section>
+<section class="intro" id="approccio"><div class="shell intro-grid"><div class="intro-media reveal"><img src="${attr(lead.detailImage)}" alt="Dettaglio illustrato dei rituali di bellezza di ${attr(lead.companyName)}"></div><div class="intro-copy reveal"><span class="eyebrow">${esc(lead.aboutEyebrow)}</span><h2>${esc(lead.aboutTitle)}</h2><p>${esc(lead.aboutText)}</p><a class="text-link" href="${attr(primaryHref)}">Richiedi una consulenza <span>↗</span></a></div></div></section>
+<section class="section services" id="trattamenti"><div class="shell"><div class="section-head reveal"><span class="eyebrow">Trattamenti</span><h2>${esc(lead.servicesTitle)}</h2><p>${esc(lead.servicesIntro)}</p></div><div class="service-grid">${renderServices(lead)}</div></div></section>
+<section class="section signature"><div class="shell signature-grid"><div class="signature-copy reveal"><span class="eyebrow">${esc(lead.featuredEyebrow)}</span><h2>${esc(lead.featuredTitle)}</h2><p>${esc(lead.featuredText)}</p></div><ul class="feature-list reveal">${features}</ul></div></section>
+<section class="section method"><div class="shell"><div class="section-head reveal"><span class="eyebrow">Come lavoriamo</span><h2>${esc(lead.methodTitle)}</h2><p>${esc(lead.methodIntro)}</p></div><div class="method-list">${renderMethod(lead)}</div></div></section>
+<section class="section faq-section" id="faq"><div class="shell faq-grid"><div class="faq-heading reveal"><span class="eyebrow">Domande frequenti</span><h2>Prima del tuo appuntamento.</h2><p>Le informazioni essenziali per scegliere il trattamento e contattare il centro.</p></div><div class="faq-list">${renderFaqs(lead)}</div></div></section>
+<section class="contact" id="contatti"><div class="shell contact-card reveal"><div><span class="eyebrow">Contatti</span><h2>${esc(lead.contactTitle)}</h2><p>${esc(lead.contactText)}</p><div class="contact-actions"><a class="button primary" href="${attr(primaryHref)}">${esc(primaryLabel)}</a><a class="button ghost" href="${attr(phone)}">${esc(lead.phone)}</a></div></div><dl class="contact-data"><div><dt>Indirizzo</dt><dd><a href="${attr(mapHref)}" target="_blank" rel="noopener">${esc(lead.address)}</a></dd></div><div><dt>Orari</dt><dd>${esc(lead.hours)}</dd></div><div><dt>Email</dt><dd><a href="${attr(email)}">${esc(lead.professionalEmail)}</a></dd></div></dl></div></section>
 </main>
-<footer><div class="container footer-row"><span>Concept riservato a ${escapeHtml(lead.companyName)}</span><span>© <span data-year></span> Axante S.r.l. · Roma</span></div></footer>
-<script src="/preview.js?v=1" defer></script>
-</body>
-</html>`;
+<footer><div class="shell footer-row"><div><strong>${esc(lead.companyName)}</strong><span>${esc(lead.address)}</span></div><div><a href="${attr(phone)}">${esc(lead.phone)}</a><a href="${attr(email)}">${esc(lead.professionalEmail)}</a></div><small>© <span data-year></span> ${esc(lead.companyName)}</small></div></footer>
+<div class="mobile-actions"><a href="${attr(primaryHref)}">${esc(primaryLabel)}</a><a href="${attr(mobileSecondary)}">${mobileSecondaryLabel}</a></div>
+<script src="/preview.js?v=2" defer></script></body></html>`;
 }
 
-fs.rmSync(distDir, { recursive: true, force: true });
-fs.mkdirSync(distDir, { recursive: true });
-if (fs.existsSync(publicDir)) fs.cpSync(publicDir, distDir, { recursive: true });
-fs.mkdirSync(leadsDir, { recursive: true });
-
+fs.rmSync(distDir, {recursive:true, force:true});
+fs.mkdirSync(distDir, {recursive:true});
+if (fs.existsSync(publicDir)) fs.cpSync(publicDir, distDir, {recursive:true});
+fs.mkdirSync(leadsDir, {recursive:true});
 const files = fs.readdirSync(leadsDir).filter(file => file.endsWith('.json')).sort();
 const slugs = new Set();
 for (const filename of files) {
@@ -116,10 +126,9 @@ for (const filename of files) {
   if (slugs.has(lead.slug)) throw new Error(`Duplicate slug: ${lead.slug}`);
   slugs.add(lead.slug);
   const output = path.join(distDir, 'p', lead.slug);
-  fs.mkdirSync(output, { recursive: true });
+  fs.mkdirSync(output, {recursive:true});
   fs.writeFileSync(path.join(output, 'index.html'), renderLead(lead));
 }
-
 fs.writeFileSync(path.join(distDir, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
-fs.writeFileSync(path.join(distDir, 'index.html'), '<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Axante · Preview riservate</title><style>body{margin:0;display:grid;min-height:100vh;place-items:center;background:#08080b;color:#fff;font:16px system-ui}main{text-align:center;padding:30px}p{color:#aaa}</style></head><body><main><h1>Preview riservate Axante</h1><p>Utilizza il link personale ricevuto nella proposta.</p></main></body></html>');
-console.log(`Generated ${files.length} lead preview(s).`);
+fs.writeFileSync(path.join(distDir, 'index.html'), '<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Area riservata</title><style>body{margin:0;display:grid;min-height:100vh;place-items:center;background:#f4f0e9;color:#342f2a;font:16px system-ui}main{text-align:center;padding:30px}p{color:#746b63}</style></head><body><main><h1>Area riservata</h1><p>Utilizza il collegamento diretto che hai ricevuto.</p></main></body></html>');
+console.log(`Generated ${files.length} client website(s).`);
