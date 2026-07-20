@@ -1,0 +1,319 @@
+name: Cleanup old Vercel deployments
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "cleanup/requests/*.json"
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type DELETE_OLD_DEPLOYMENTS to run"
+        required: true
+        type: string
+      dry_run:
+        description: "Show what would be deleted without deleting"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-deployment-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Keep current production only
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TEAM_ID: team_J3lt5J14KCsR8INKAGHWAI09
+      VERCEL_PROJECT_ID: prj_TJBwrXmx5R7TDUTKAO7CqX8f148K
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate cleanup authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${VERCEL_TOKEN}" ]]; then
+            echo "Missing GitHub Actions secret: VERCEL_TOKEN"
+            exit 1
+          fi
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.confirmation }}" != "DELETE_OLD_DEPLOYMENTS" ]]; then
+              echo "Invalid confirmation phrase."
+              exit 1
+            fi
+            echo "Manual cleanup authorized. Dry run: ${DRY_RUN}"
+            exit 0
+          fi
+
+          REQUEST_FILE="$(git diff-tree --no-commit-id --name-only -r "${GITHUB_SHA}" | grep -E '^cleanup/requests/[^/]+\.json$' | tail -n 1 || true)"
+          if [[ -z "${REQUEST_FILE}" ]]; then
+            echo "No cleanup request JSON found in this commit."
+            exit 1
+          fi
+
+          node - "${REQUEST_FILE}" <<'NODE'
+          const fs = require('node:fs');
+          const file = process.argv[2];
+          const request = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+          const valid =
+            request.action === 'delete_old_vercel_deployments' &&
+            request.approved === true &&
+            request.keep_current_production === true;
+
+          if (!valid) {
+            console.error(`Invalid or unapproved cleanup request: ${file}`);
+            process.exit(1);
+          }
+
+          console.log(`Authorized cleanup request: ${file}`);
+          console.log(`Reason: ${request.reason || 'not specified'}`);
+          console.log(`Deleted slugs: ${(request.deleted_slugs || []).join(', ') || 'not specified'}`);
+          NODE
+
+      - name: Delete deployments older than current production
+        shell: bash
+        run: |
+          node <<'NODE'
+          const TOKEN = process.env.VERCEL_TOKEN;
+          const TEAM_ID = process.env.VERCEL_TEAM_ID;
+          const PROJECT_ID = process.env.VERCEL_PROJECT_ID;
+          const COMMIT_SHA = process.env.GITHUB_SHA;
+          const DRY_RUN = String(process.env.DRY_RUN).toLowerCase() === 'true';
+          const API = 'https://api.vercel.com';
+          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+          const deploymentId = deployment => deployment.uid || deployment.id;
+          const createdAt = deployment => Number(deployment.createdAt || deployment.created || 0);
+          const stateOf = deployment => deployment.readyState || deployment.state || 'UNKNOWN';
+
+          async function apiRequest(url, options = {}, attempts = 5) {
+            let lastError;
+            for (let attempt = 1; attempt <= attempts; attempt += 1) {
+              try {
+                const response = await fetch(url, {
+                  ...options,
+                  headers: {
+                    Authorization: `Bearer ${TOKEN}`,
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                  }
+                });
+
+                const text = await response.text();
+                let body = null;
+                try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+
+                if (response.ok || response.status === 404) {
+                  return { response, body };
+                }
+
+                if ([401, 403].includes(response.status)) {
+                  throw new Error(`Vercel authorization failed (${response.status}): ${text}`);
+                }
+
+                if (response.status === 429 || response.status >= 500) {
+                  lastError = new Error(`Temporary Vercel error (${response.status}): ${text}`);
+                  await sleep(attempt * 2000);
+                  continue;
+                }
+
+                return { response, body };
+              } catch (error) {
+                lastError = error;
+                if (attempt < attempts) await sleep(attempt * 2000);
+              }
+            }
+            throw lastError || new Error('Vercel request failed.');
+          }
+
+          async function listDeployments(filters = {}) {
+            const found = [];
+            let until;
+
+            for (let page = 0; page < 50; page += 1) {
+              const url = new URL('/v7/deployments', API);
+              url.searchParams.set('projectId', PROJECT_ID);
+              url.searchParams.set('teamId', TEAM_ID);
+              url.searchParams.set('limit', '100');
+
+              for (const [key, value] of Object.entries(filters)) {
+                if (value !== undefined && value !== null && value !== '') {
+                  url.searchParams.set(key, String(value));
+                }
+              }
+              if (until) url.searchParams.set('until', String(until));
+
+              const { response, body } = await apiRequest(url);
+              if (!response.ok) {
+                throw new Error(`Unable to list Vercel deployments (${response.status}): ${JSON.stringify(body)}`);
+              }
+
+              const deployments = body?.deployments || body?.data?.deployments || [];
+              const pagination = body?.pagination || body?.data?.pagination || {};
+              found.push(...deployments);
+
+              if (!pagination.next || deployments.length === 0) break;
+              until = pagination.next;
+            }
+
+            const unique = new Map();
+            for (const deployment of found) unique.set(deploymentId(deployment), deployment);
+            return [...unique.values()];
+          }
+
+          async function findCommitDeployment() {
+            for (let attempt = 1; attempt <= 60; attempt += 1) {
+              let matches = await listDeployments({
+                target: 'production',
+                state: 'READY',
+                sha: COMMIT_SHA
+              });
+
+              if (matches.length === 0) {
+                const ready = await listDeployments({ target: 'production', state: 'READY' });
+                matches = ready.filter(item => item.meta?.githubCommitSha === COMMIT_SHA);
+              }
+
+              if (matches.length > 0) {
+                matches.sort((a, b) => createdAt(b) - createdAt(a));
+                return matches[0];
+              }
+
+              console.log(`Waiting for production deployment of ${COMMIT_SHA} (${attempt}/60)...`);
+              await sleep(10000);
+            }
+
+            throw new Error(`No READY production deployment found for commit ${COMMIT_SHA}.`);
+          }
+
+          async function latestProduction() {
+            const ready = await listDeployments({ target: 'production', state: 'READY' });
+            ready.sort((a, b) => createdAt(b) - createdAt(a));
+            return ready[0] || null;
+          }
+
+          async function assertStillCurrent(protectedDeployment) {
+            const latest = await latestProduction();
+            if (!latest) throw new Error('No READY production deployment exists.');
+            if (deploymentId(latest) !== deploymentId(protectedDeployment)) {
+              throw new Error(
+                `Cleanup aborted: production moved from ${deploymentId(protectedDeployment)} to ${deploymentId(latest)}.`
+              );
+            }
+          }
+
+          async function deleteDeployment(deployment) {
+            const id = deploymentId(deployment);
+            const url = new URL(`/v13/deployments/${encodeURIComponent(id)}`, API);
+            url.searchParams.set('teamId', TEAM_ID);
+
+            const { response, body } = await apiRequest(url, { method: 'DELETE' });
+            if (response.ok || response.status === 404) return { deleted: true };
+
+            const retryable = [400, 409, 423, 429].includes(response.status) || response.status >= 500;
+            return {
+              deleted: false,
+              retryable,
+              error: `${response.status}: ${JSON.stringify(body)}`
+            };
+          }
+
+          async function main() {
+            const protectedDeployment = await findCommitDeployment();
+            const protectedId = deploymentId(protectedDeployment);
+            const protectedCreatedAt = createdAt(protectedDeployment);
+
+            await assertStillCurrent(protectedDeployment);
+
+            console.log(`Protected production deployment: ${protectedId}`);
+            console.log(`Protected URL: https://${protectedDeployment.url}`);
+
+            const deployments = await listDeployments();
+            const candidates = deployments
+              .filter(item => deploymentId(item) !== protectedId)
+              .filter(item => createdAt(item) < protectedCreatedAt)
+              .sort((a, b) => createdAt(a) - createdAt(b));
+
+            console.log(`Older deployments found: ${candidates.length}`);
+            for (const item of candidates) {
+              console.log(`- ${deploymentId(item)} | ${stateOf(item)} | ${item.url || 'no-url'}`);
+            }
+
+            if (DRY_RUN) {
+              console.log('Dry run complete. No deployment was deleted.');
+              return;
+            }
+
+            let remaining = [...candidates];
+            let deletedCount = 0;
+
+            for (let round = 1; round <= 8 && remaining.length > 0; round += 1) {
+              await assertStillCurrent(protectedDeployment);
+              const retry = [];
+
+              for (const deployment of remaining) {
+                const result = await deleteDeployment(deployment);
+                if (result.deleted) {
+                  deletedCount += 1;
+                  console.log(`Deleted ${deploymentId(deployment)}`);
+                } else if (result.retryable) {
+                  retry.push(deployment);
+                  console.log(`Retry later ${deploymentId(deployment)}: ${result.error}`);
+                } else {
+                  throw new Error(`Cannot delete ${deploymentId(deployment)}: ${result.error}`);
+                }
+                await sleep(250);
+              }
+
+              remaining = retry;
+              if (remaining.length > 0) {
+                console.log(`Round ${round} complete; ${remaining.length} deployment(s) still pending.`);
+                await sleep(20000);
+              }
+            }
+
+            if (remaining.length > 0) {
+              throw new Error(`Unable to delete ${remaining.length} old deployment(s) after retries.`);
+            }
+
+            await assertStillCurrent(protectedDeployment);
+            const verification = await listDeployments();
+            const oldRemaining = verification.filter(item =>
+              deploymentId(item) !== protectedId && createdAt(item) < protectedCreatedAt
+            );
+
+            if (oldRemaining.length > 0) {
+              throw new Error(`Verification failed: ${oldRemaining.length} old deployment(s) still exist.`);
+            }
+
+            console.log(`Cleanup complete. Deleted ${deletedCount} deployment(s).`);
+            console.log(`Current production preserved: ${protectedId}`);
+          }
+
+          main().catch(error => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE
