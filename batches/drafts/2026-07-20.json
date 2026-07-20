@@ -1,0 +1,44 @@
+{
+  "batch_id": "2026-07-20-beauty-roma",
+  "created_at": "2026-07-20",
+  "sector": "Centri estetici",
+  "city": "Roma",
+  "status": "DRAFT",
+  "approved_for_contact": false,
+  "send_status": "DRAFT",
+  "leads": [
+    {
+      "lead_id": "ROM-BEAUTY-20260720-01",
+      "company_name": "F Beauty",
+      "preview_slug": "f-beauty-roma-k7m2",
+      "preview_url": "https://axante-lead-previews.vercel.app/p/f-beauty-roma-k7m2/",
+      "preview_status": "BUILDING",
+      "qa_status": "PENDING",
+      "approved_for_contact": false,
+      "send_status": "DRAFT",
+      "lifecycle_status": "ACTIVE"
+    },
+    {
+      "lead_id": "ROM-BEAUTY-20260720-02",
+      "company_name": "Beauty Club Centro Estetico",
+      "preview_slug": "beauty-club-roma-r4v9",
+      "preview_url": "https://axante-lead-previews.vercel.app/p/beauty-club-roma-r4v9/",
+      "preview_status": "BUILDING",
+      "qa_status": "PENDING",
+      "approved_for_contact": false,
+      "send_status": "DRAFT",
+      "lifecycle_status": "ACTIVE"
+    },
+    {
+      "lead_id": "ROM-BEAUTY-20260720-03",
+      "company_name": "Centro Estetico Femelle",
+      "preview_slug": "centro-femelle-roma-p8x3",
+      "preview_url": "https://axante-lead-previews.vercel.app/p/centro-femelle-roma-p8x3/",
+      "preview_status": "BUILDING",
+      "qa_status": "PENDING",
+      "approved_for_contact": false,
+      "send_status": "DRAFT",
+      "lifecycle_status": "ACTIVE"
+    }
+  ]
+}
