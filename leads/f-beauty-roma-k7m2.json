@@ -62,12 +62,13 @@
   "visualDirection": "Palette avorio, terracotta e verde salvia; fotografia illustrata, spazi bianchi e tono caldo.",
   "mainServices": ["Trattamenti viso e corpo","Massaggi","Pressoterapia","Epilazione laser","Manicure e pedicure","Make-up e laminazione"],
   "sourceUrls": ["https://fbeauty.it/","https://fbeauty.it/chi-siamo/","https://fbeauty.it/servizi/","https://fbeauty.it/contatti/"],
-  "previewStatus": "BUILDING",
-  "qaStatus": "PENDING",
+  "previewStatus": "NOT_READY",
+  "qaStatus": "QA_FAILED",
   "approvedForContact": false,
   "sendStatus": "DRAFT",
   "lifecycleStatus": "ACTIVE",
   "leadScore": 86,
+  "notes": "BLOCCO VERCEL: limite giornaliero di 100 deployment esaurito. URL verificato il 20/07/2026: HTTP 404. Codice e asset completi su main; deploy da ripetere dopo il reset del 21/07/2026 alle 03:55 Europe/Rome.",
   "emailSubject": "Una proposta per rendere più chiari i trattamenti di F Beauty",
   "emailBody": "Buongiorno,\nsono Daniele di Axante, agenzia web di Roma.\nVisitando il sito di F Beauty ho notato alcuni refusi nei testi, una presentazione dei servizi poco immediata e un percorso di contatto non sempre uniforme tra le diverse pagine, soprattutto da smartphone.\nPer mostrarvi una possibile soluzione, abbiamo preparato una nuova versione del vostro sito:\nhttps://axante-lead-previews.vercel.app/p/f-beauty-roma-k7m2/\nAbbiamo riorganizzato trattamenti, consulenza e contatti per rendere il centro più chiaro, professionale e semplice da raggiungere via telefono o WhatsApp.\nSe la direzione vi interessa, possiamo sentirci brevemente.\nUn saluto,\nDaniele – Axante"
 }
