@@ -1,0 +1,143 @@
+name: Deploy final production
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "deploy/requests/*.json"
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type DEPLOY_FINAL_PRODUCTION"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: axante-lead-previews-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build, validate and deploy once
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TEAM_ID: team_J3lt5J14KCsR8INKAGHWAI09
+      VERCEL_ORG_ID: team_J3lt5J14KCsR8INKAGHWAI09
+      VERCEL_PROJECT_ID: prj_TJBwrXmx5R7TDUTKAO7CqX8f148K
+      VERCEL_PRODUCTION_DOMAIN: axante-lead-previews.vercel.app
+
+    steps:
+      - name: Checkout final repository state
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate authorization and request
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${VERCEL_TOKEN}" ]]; then
+            echo "Missing repository secret VERCEL_TOKEN"
+            exit 1
+          fi
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.confirmation }}" != "DEPLOY_FINAL_PRODUCTION" ]]; then
+              echo "Invalid confirmation phrase"
+              exit 1
+            fi
+            exit 0
+          fi
+
+          REQUEST_FILE="$(git diff-tree --no-commit-id --name-only -r "${GITHUB_SHA}" | grep -E '^deploy/requests/[^/]+\.json$' | tail -n 1 || true)"
+          if [[ -z "${REQUEST_FILE}" ]]; then
+            echo "No final deployment request found in this commit"
+            exit 1
+          fi
+
+          node - "${REQUEST_FILE}" <<'NODE'
+          const fs = require('node:fs');
+          const file = process.argv[2];
+          const request = JSON.parse(fs.readFileSync(file, 'utf8'));
+          const valid =
+            request.action === 'deploy_final_production' &&
+            request.approved === true &&
+            request.qa_passed === true &&
+            Number.isInteger(request.expected_lead_count) &&
+            request.expected_lead_count >= 0;
+
+          if (!valid) {
+            console.error(`Invalid or unapproved deployment request: ${file}`);
+            process.exit(1);
+          }
+
+          console.log(`Authorized final deployment: ${file}`);
+          console.log(`Expected leads: ${request.expected_lead_count}`);
+          console.log(`Batch: ${request.batch_id || 'not specified'}`);
+          NODE
+
+      - name: Pull production project settings
+        shell: bash
+        run: npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build and run blocking QA locally
+        shell: bash
+        run: npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
+
+      - name: Free deployment capacity without touching production
+        shell: bash
+        run: node scripts/vercel-deployment-cleanup.mjs
+
+      - name: Create the only Vercel deployment
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOYMENT_URL="$(npx --yes vercel@latest deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN" | tail -n 1)"
+          echo "url=${DEPLOYMENT_URL}" >> "$GITHUB_OUTPUT"
+          echo "Production deployment: ${DEPLOYMENT_URL}"
+
+      - name: Verify production URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..30}; do
+            STATUS="$(curl -L -sS -o /tmp/production.html -w '%{http_code}' "https://${VERCEL_PRODUCTION_DOMAIN}/" || true)"
+            if [[ "${STATUS}" == "200" ]]; then
+              grep -qi '<html' /tmp/production.html
+              echo "Production verified with HTTP 200"
+              exit 0
+            fi
+            echo "Waiting for production alias (${attempt}/30), status=${STATUS}"
+            sleep 5
+          done
+          echo "Production verification failed"
+          exit 1
+
+      - name: Remove all superseded deployments
+        shell: bash
+        run: node scripts/vercel-deployment-cleanup.mjs
+
+      - name: Write deployment summary
+        shell: bash
+        run: |
+          {
+            echo "## Final production deployment"
+            echo ""
+            echo "- Local Vercel build and QA: passed"
+            echo "- Production URL: https://${VERCEL_PRODUCTION_DOMAIN}/"
+            echo "- Deployment created: ${{ steps.deploy.outputs.url }}"
+            echo "- Historical deployments: cleaned"
+          } >> "$GITHUB_STEP_SUMMARY"
